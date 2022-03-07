@@ -428,8 +428,10 @@ def cog_validate(  # noqa: C901
 
     with rasterio.Env(**config):
         with rasterio.open(src_path) as src:
-            # if not src.driver == "GTiff":
-            #     raise Exception("The file is not a GeoTIFF")
+            if (src.driver == "JP2OpenJPEG" && src.crs is None):
+                raise Exception("The JPEG2000 file lacks a coordinate reference system")
+            elif not src.driver == "GTiff":
+                raise Exception("The file is not a GeoTIFF")
 
             if any(pathlib.Path(x).suffix == ".ovr" for x in src.files):
                 errors.append(
@@ -449,7 +451,12 @@ def cog_validate(  # noqa: C901
                         "to include internal overviews"
                     )
 
-            ifd_offset = int(src.get_tag_item("IFD_OFFSET", "TIFF", bidx=1))
+            # Image File Directories are specific to TIFF, not JPEG2000
+            if src.driver == "JP2OpenJPEG":
+                ifd_offset = 0
+            else:
+                ifd_offset = int(src.get_tag_item("IFD_OFFSET", "TIFF", bidx=1))
+
             # Starting from GDAL 3.1, GeoTIFF and COG have ghost headers
             # e.g:
             # """
