@@ -30,6 +30,8 @@ raster_path_mask = os.path.join(FIXTURES_DIR, "image_rgb_mask.tif")
 raster_path_small = os.path.join(FIXTURES_DIR, "image_171px.tif")
 raster_path_toosmall = os.path.join(FIXTURES_DIR, "image_51px.tif")
 raster_path_offsets = os.path.join(FIXTURES_DIR, "image_with_offsets.tif")
+raster_path_jpeg2000 = os.path.join(FIXTURES_DIR, "image_jpeg2000.jp2")
+raster_path_non_geo_jpeg2000 = os.path.join(FIXTURES_DIR, "image_non_geo_jpeg2000.jp2")
 raster_colormap = os.path.join(FIXTURES_DIR, "image_colormap.tif")
 raster_nocolormap = os.path.join(FIXTURES_DIR, "image_nocolormap.tif")
 raster_badoutputsize = os.path.join(FIXTURES_DIR, "bad_output_vrt.tif")
@@ -442,6 +444,26 @@ def test_cog_translate_forward_scales(runner):
             assert src.offsets == offs
 
 
+def test_cog_translate_jpeg2000(runner):
+    """Should work as expected (create cogeo file from jpeg2000)."""
+    with runner.isolated_filesystem():
+        cog_translate(raster_path_jpeg2000, "cogeo.tif", deflate_profile, quiet=True)
+        with rasterio.open("cogeo.tif") as src:
+            assert src.height == 1830
+            assert src.width == 1830
+            assert src.meta["dtype"] == "uint16"
+            assert src.is_tiled
+            assert src.compression.value == "DEFLATE"
+
+
+def test_cog_translate_non_geo_jpeg2000(runner):
+    """Should fail (raise exception that jpeg2000 not georeferenced)."""
+    with runner.isolated_filesystem():
+        cog_translate(
+            raster_path_non_geo_jpeg2000, "cogeo.tif", deflate_profile, quiet=True
+        )
+
+
 def test_cog_translate_forward_cmap(runner):
     """Colormap should be passed to the output file."""
     with runner.isolated_filesystem():
@@ -535,7 +557,10 @@ def test_cog_info_dict_access():
 @pytest.mark.parametrize(
     "fname,is_local",
     [
-        (raster_path_rgba, True,),
+        (
+            raster_path_rgba,
+            True,
+        ),
         (pathlib.Path(raster_path_rgba), True),
         ("s3://abucket/adirectory/afile.tif", False),
         ("https://ahost/adirectory/afile.tif", False),
@@ -602,7 +627,11 @@ def test_gdal_cog_compare(runner):
             raster_path_rgba,
             "riocogeo.tif",
             profile.copy(),
-            indexes=(1, 2, 3,),
+            indexes=(
+                1,
+                2,
+                3,
+            ),
             add_mask=True,
             quiet=True,
         )

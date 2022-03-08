@@ -428,7 +428,7 @@ def cog_validate(  # noqa: C901
 
     with rasterio.Env(**config):
         with rasterio.open(src_path) as src:
-            if (src.driver == "JP2OpenJPEG" && src.crs is None):
+            if src.driver == "JP2OpenJPEG" and src.crs is None:
                 raise Exception("The JPEG2000 file lacks a coordinate reference system")
             elif not src.driver == "GTiff":
                 raise Exception("The file is not a GeoTIFF")
